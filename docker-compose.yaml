@@ -1,0 +1,13 @@
+services:
+  impensa-node-postgres:
+    container_name: impensa-node-postgres
+    image: postgres:16
+    ports:
+      - 6969:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    restart: unless-stopped
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
