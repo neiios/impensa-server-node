@@ -1,13 +1,13 @@
 import { compare, genSalt, hash } from "bcrypt";
 import authorize from "../middleware/authorize.js";
-import query from "../db.js";
+import pool from "../db.js";
 import { Router } from "express";
 
 const router = Router();
 
 router.get("/", authorize, async (req, res) => {
   try {
-    const user = await query(
+    const user = await pool.query(
       "SELECT user_name, user_currency, user_email FROM users WHERE user_id = $1",
       [req.user.id]
     );
@@ -23,7 +23,7 @@ router.post("/expense", authorize, async (req, res) => {
   try {
     const { amount, description, category } = req.body;
 
-    const newExpense = await query(
+    const newExpense = await pool.query(
       "INSERT INTO expenses (user_id, expense_amount, expense_description, expense_category) VALUES ($1, $2, $3, $4) RETURNING *",
       [req.user.id, amount, description, category]
     );
@@ -44,7 +44,7 @@ router.put("/expense", authorize, async (req, res) => {
       expense_category,
     } = req.body;
 
-    const updateExpense = await query(
+    const updateExpense = await pool.query(
       "UPDATE expenses SET expense_amount = $1, expense_description=$2, expense_category=$3 WHERE expense_id = $4 AND user_id = $5 RETURNING *",
       [
         expense_amount,
@@ -65,7 +65,7 @@ router.put("/expense", authorize, async (req, res) => {
 router.delete("/expense/:expense_id", authorize, async (req, res) => {
   try {
     const { expense_id } = req.params;
-    const deleteExpense = await query(
+    const deleteExpense = await pool.query(
       "DELETE FROM expenses WHERE expense_id = $1 AND user_id = $2 RETURNING *",
       [expense_id, req.user.id]
     );
@@ -79,7 +79,7 @@ router.delete("/expense/:expense_id", authorize, async (req, res) => {
 
 router.get("/expenses", authorize, async (req, res) => {
   try {
-    const expenses = await query(
+    const expenses = await pool.query(
       "SELECT * FROM expenses WHERE user_id = $1 ORDER BY expense_date USING <",
       [req.user.id]
     );
@@ -93,7 +93,7 @@ router.get("/expenses", authorize, async (req, res) => {
 
 router.get("/user", authorize, async (req, res) => {
   try {
-    const userData = await query(
+    const userData = await pool.query(
       "SELECT user_name, user_email FROM users WHERE user_id = $1",
       [req.user.id]
     );
@@ -109,7 +109,7 @@ router.put("/user", authorize, async (req, res) => {
   try {
     const { userName, userEmail, userPassword, userNewPassword } = req.body;
 
-    const user = await query("SELECT * FROM users WHERE user_id = $1", [
+    const user = await pool.query("SELECT * FROM users WHERE user_id = $1", [
       req.user.id,
     ]);
 
@@ -125,7 +125,7 @@ router.put("/user", authorize, async (req, res) => {
     const salt = await genSalt(10);
     const bcryptPassword = await hash(userNewPassword, salt);
 
-    const updateUser = await query(
+    const updateUser = await pool.query(
       "UPDATE users SET user_name=$1, user_email=$2, user_password=$3 WHERE user_id=$4  RETURNING *",
       [userName, userEmail, bcryptPassword, req.user.id]
     );
